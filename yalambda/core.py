@@ -1,3 +1,4 @@
+import asyncio
 import json
 import base64
 from dataclasses import dataclass, field
@@ -103,9 +104,33 @@ _RawHandler = Callable[[Event, Context], Coroutine[Any, Any, Dict[str, Any]]]
 _YaHandler = Callable[[YaRequest], Awaitable[YaResponse]]
 
 
-def function(ya_handler: _YaHandler) -> _RawHandler:
-    async def handler(event: Event, context: Context) -> Dict[str, Any]:
-        req = YaRequest.build(event, context)
-        resp = await ya_handler(req)
-        return resp.to_json()
-    return handler
+_Init =  Callable[[], Awaitable[Any]]
+
+
+async def _default_init():
+    return None
+
+
+def function(init: _Init = _default_init) -> Callable[[_YaHandler], _RawHandler]:
+    initialized: Union[bool, asyncio.Event] = False
+    # If another call happens while `init()` is still running, we want to
+    # wait for it and not start a new coroutine
+
+    def _decorator(ya_handler: _YaHandler) -> _RawHandler:
+        async def handler(event: Event, context: Context) -> Dict[str, Any]:
+            nonlocal initialized
+            if initialized is False:
+                e = initialized = asyncio.Event()
+                await init()
+                e.set()
+                initialized = True
+            elif initialized is True:
+                pass
+            else:
+                await initialized.wait()
+
+            req = YaRequest.build(event, context)
+            resp = await ya_handler(req)
+            return resp.to_json()
+        return handler
+    return _decorator
