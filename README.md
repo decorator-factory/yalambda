@@ -13,7 +13,24 @@ Features:
 from yalambda import function, YaRequest, YaResponse
 
 
-@function
+@function()
 async def handler(req: YaRequest) -> YaResponse:
     return YaResponse(200, req.body)
+```
+
+
+# Initialize something asynchronously on first call
+
+```py
+from yalambda import function, YaRequest, YaResponse
+
+
+async def init():
+    global answer
+    answer = 42
+
+
+@function(init)
+async def handler(req: YaRequest) -> YaResponse:
+    return YaResponse(200, "Answer:".format(answer))
 ```

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "yalambda"
-version = "0.2.0"
+version = "0.2.2"
 description = "Utility library for Yandex.Cloud"
 authors = ["decorator-factory <42166884+decorator-factory@users.noreply.github.com>"]
 license = "MIT"
