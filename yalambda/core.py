@@ -1,9 +1,11 @@
+import inspect
+import dataclass_factory
 import json
 import base64
 from dataclasses import dataclass, field
 from typing import (
     Any, Awaitable, Callable, Coroutine,
-    Dict, List, Protocol, TypedDict, Union, final
+    Dict, List, Protocol, TypeVar, TypedDict, Union, final
 )
 
 from .async_utils import before_first_call
@@ -101,9 +103,14 @@ class YaResponse:
         }
 
 
-_RawHandler = Callable[[Event, Context], Coroutine[Any, Any, Dict[str, Any]]]
-_YaHandler = Callable[[YaRequest], Awaitable[YaResponse]]
+T = TypeVar("T")
 
+_RawHandler = Callable[[Event, Context], Coroutine[Any, Any, Dict[str, Any]]]
+_YaHandler = Union[
+    Callable[[YaRequest], Awaitable[YaResponse]],
+    Callable[[T], Awaitable[YaResponse]],
+    Callable[[T, YaRequest], Awaitable[YaResponse]],
+]
 
 _Init =  Callable[[], Awaitable[Any]]
 
@@ -112,17 +119,42 @@ async def _default_init():
     return None
 
 
-# _default_factory = dataclass_factory.Factory()
+def _parse_request(
+    request: YaRequest,
+    handler: Callable,
+    df: dataclass_factory.Factory
+):
+    signature = inspect.signature(handler)
+    params = list(signature.parameters.values())
+
+    if len(params) not in (1, 2):
+        raise AssertionError("Handler should have 1 or 2 parameters, got {}".format(len(params)))
+
+    for param in params:
+        if param.annotation in (param.empty, YaRequest):
+            yield request
+        else:
+            body_json = json.loads(request.body)
+            yield df.load(body_json, param.annotation)
+
+
+_default_factory = dataclass_factory.Factory(debug_path=True)
+
 
 def function(
     init: _Init = _default_init,
-    # factory: dataclass_factory.Factory = _default_factory,
-) -> Callable[[_YaHandler], _RawHandler]:
-    def _decorator(ya_handler: _YaHandler) -> _RawHandler:
+    df: dataclass_factory.Factory = _default_factory,
+) -> Callable[[_YaHandler[T]], _RawHandler]:
+    def _decorator(ya_handler: _YaHandler[T]) -> _RawHandler:
         @before_first_call(init)
         async def handler(event: Event, context: Context) -> Dict[str, Any]:
             req = YaRequest.build(event, context)
-            resp = await ya_handler(req)
+            try:
+                args = list(_parse_request(req, ya_handler, df))
+            except (ValueError, TypeError) as e:
+                resp = YaResponse(400, "\n".join(map(str, e.args)))
+            else:
+                resp = await ya_handler(*args)
             return resp.to_json()
         return handler
     return _decorator

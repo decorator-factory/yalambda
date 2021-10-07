@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "yalambda"
-version = "0.2.2"
+version = "0.3.0"
 description = "Utility library for Yandex.Cloud"
 authors = ["decorator-factory <42166884+decorator-factory@users.noreply.github.com>"]
 license = "MIT"
@@ -13,6 +13,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.8"
+dataclass-factory = "^2.11"
 
 [tool.poetry.dev-dependencies]
 

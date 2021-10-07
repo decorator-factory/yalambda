@@ -19,6 +19,50 @@ async def handler(req: YaRequest) -> YaResponse:
 ```
 
 
+# Automatically parse dataclasses
+```py
+from dataclasses import dataclass
+from yalambda import function, YaResponse
+
+
+@dataclass
+class Point:
+    x: float
+    y: float
+
+
+@function()
+async def handler(point: Point) -> YaResponse:
+    dist = (point.x**2 + point.y**2)**0.5
+    return YaResponse(200, {"distance_to_origin": dist})
+```
+
+We use the `dataclass-factory` package to parse the JSON request
+
+
+# Access both the dataclass and the request
+
+```py
+from dataclasses import dataclass
+from yalambda import function, YaRequest, YaResponse
+
+
+@dataclass
+class Point:
+    x: float
+    y: float
+
+
+@function()
+async def handler(point: Point, req: YaRequest) -> YaResponse:
+    if req.http_method != "POST":
+        return YaResponse(405, "Only POST requests are allowed")
+
+    dist = (point.x**2 + point.y**2)**0.5
+    return YaResponse(200, {"distance_to_origin": dist})
+```
+
+
 # Initialize something asynchronously on first call
 
 ```py

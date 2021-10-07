@@ -1,8 +1,17 @@
-package = []
+[[package]]
+name = "dataclass-factory"
+version = "2.11"
+description = "An utility class for creating instances of dataclasses"
+category = "main"
+optional = false
+python-versions = ">=3.6"
 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8"
-content-hash = "1cbbf6d73d987f4b2b03504b8a992e7e7e180fe8d255034590ea5b579a87c947"
+content-hash = "7339c74777713775c761cdeec72cba2ffa3c28898f6b39e65c33cec1f6885e7a"
 
 [metadata.files]
+dataclass-factory = [
+    {file = "dataclass_factory-2.11.tar.gz", hash = "sha256:bddd0dcf9d64daf58529dba5ae60841892433cf8c0752d99f0be15b015f53d24"},
+]
