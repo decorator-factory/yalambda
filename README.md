@@ -5,6 +5,7 @@ Yalambda lets you write Yanex.Cloud Functions with less boilerplate
 Features:
 - everything is type-annotated, so you'll get autocompletion in IDEs
 - base64 de/encoding and other details are handled for you
+- automatically parse JSON using `dataclass-factory`
 
 
 # Echo server example
@@ -36,8 +37,6 @@ async def handler(point: Point) -> YaResponse:
     dist = (point.x**2 + point.y**2)**0.5
     return YaResponse(200, {"distance_to_origin": dist})
 ```
-
-We use the `dataclass-factory` package to parse the JSON request
 
 
 # Access both the dataclass and the request
@@ -76,7 +75,7 @@ async def init():
 
 @function(init)
 async def handler(req: YaRequest) -> YaResponse:
-    return YaResponse(200, "Answer:".format(answer))
+    return YaResponse(200, "Answer: {}".format(answer))
 ```
 
 
