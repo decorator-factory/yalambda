@@ -1,0 +1,2 @@
+httpx==0.19.0
+yalambda>=0.4.0
