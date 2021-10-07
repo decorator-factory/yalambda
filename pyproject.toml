@@ -1,10 +1,10 @@
 [tool.poetry]
 name = "yalambda"
-version = "0.1.0"
+version = "0.1.1"
 description = "Utility library for Yandex.Cloud"
 authors = ["decorator-factory <42166884+decorator-factory@users.noreply.github.com>"]
 license = "MIT"
-homepage = "https://github.com/decorator-factory/lanim"
+homepage = "https://github.com/decorator-factory/yalambda"
 readme = "README.md"
 
 classifiers = [
