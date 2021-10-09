@@ -1,13 +1,16 @@
 import inspect
-import dataclass_factory
 import json
 import base64
+from itertools import chain
 from dataclasses import dataclass, field
 from typing import (
     Any, Awaitable, Callable, Coroutine,
     Dict, List, Mapping, Protocol, TypeVar,
     TypedDict, Union, final
 )
+
+from dataclass_factory.factory import Factory
+from multidict import CIMultiDict
 
 from .async_utils import before_first_call
 
@@ -49,11 +52,16 @@ class Event(TypedDict):
     isBase64Encoded: bool
 
 
+def _multidict_from_listdict(d: Dict[str, List[str]]) -> "CIMultiDict[str]":
+    pairs = chain.from_iterable([(k, v) for v in vs] for (k, vs) in d.items())
+    return CIMultiDict(pairs)
+
+
 @dataclass
 class YaRequest:
     http_method: str
-    headers: Dict[str, List[str]]
-    query_params: Dict[str, List[str]]
+    headers: "CIMultiDict[str]"
+    query_params: "CIMultiDict[str]"
     ctx: Context
     request_ctx: RequestContext
     body: Union[str, bytes]
@@ -65,10 +73,13 @@ class YaRequest:
         else:
             body = event["body"]
 
+        headers = _multidict_from_listdict(event["multiValueHeaders"])
+        params = _multidict_from_listdict(event["multiValueQueryStringParameters"])
+
         return YaRequest(
             http_method=event["httpMethod"],
-            headers=event["multiValueHeaders"],
-            query_params=event["multiValueQueryStringParameters"],
+            headers=headers,
+            query_params=params,
             ctx=ctx,
             request_ctx=event["requestContext"],
             body=body
@@ -81,26 +92,25 @@ class YaResponse:
     body: Union[bytes, str, Dict[str, Any], List[Any]]
     headers: Dict[str, List[str]] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def _body_as_string(self): # -> (is_base64, str)
         if isinstance(self.body, str):
-            self._is_b64_encoded = False
+            return False, self.body
         elif isinstance(self.body, bytes):
-            self.body = base64.b64encode(self.body).decode("ascii")
-            self._is_b64_encoded = True
+            return True, base64.b64encode(self.body).decode("ascii")
         elif isinstance(self.body, (list, dict)):
-            self.body = json.dumps(self.body)
-            self._is_b64_encoded = False
+            return False, json.dumps(self.body)
         else:
             raise TypeError(
                 "Expected body to be str, bytes, dict or list, got {!r}".format(type(self.body))
             )
 
     def to_json(self) -> Dict[str, Any]:
+        is_base64, body_string = self._body_as_string()
         return {
             "statusCode": self.status_code,
             "multiValueHeaders": self.headers,
-            "body": self.body,
-            "isBase64Encoded": self._is_b64_encoded,
+            "body": body_string,
+            "isBase64Encoded": is_base64,
         }
 
 
@@ -123,7 +133,7 @@ async def _default_init():
 def _parse_request(
     request: YaRequest,
     handler: Callable,
-    df: dataclass_factory.Factory
+    df: Factory
 ):
     signature = inspect.signature(handler)
     params = list(signature.parameters.values())
@@ -139,12 +149,27 @@ def _parse_request(
             yield df.load(body_json, param.annotation)
 
 
-_default_factory = dataclass_factory.Factory(debug_path=True)
+_default_factory = Factory(debug_path=True)
+
+
+async def run(
+    ya_handler: _YaHandler[T],
+    req: YaRequest,
+    df: Factory = _default_factory,
+):
+    try:
+        args = list(_parse_request(req, ya_handler, df))
+    except (ValueError, TypeError) as e:
+        resp = YaResponse(400, "\n".join(map(str, e.args)))
+    else:
+        resp = await ya_handler(*args)
+    return resp
+
 
 
 def function(
     init: _Init = _default_init,
-    df: dataclass_factory.Factory = _default_factory,
+    df: Factory = _default_factory,
 ) -> Callable[[_YaHandler[T]], _RawHandler]:
     def _decorator(ya_handler: _YaHandler[T]) -> _RawHandler:
         @before_first_call(init)
@@ -165,7 +190,7 @@ def dispatch(
     handlers: Mapping[str, _YaHandler[Any]],
     *,
     init: _Init = _default_init,
-    df: dataclass_factory.Factory = _default_factory,
+    df: Factory = _default_factory,
 ) -> _RawHandler:
     prepared_handlers = {
         method.upper(): function(init, df)(h) for method, h in handlers.items()

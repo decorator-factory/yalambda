@@ -126,3 +126,31 @@ $ python -m yalambda your_module
 ======== Running on http://0.0.0.0:55710 ========
 (Press CTRL+C to quit)
 ```
+
+
+# Condition DSL
+
+We can modify our GitHub->Discord example so that it doesn't error out on the initial ping event:
+
+```py
+from yalambda import when
+
+...
+
+async def handle_issue_events(event: IssueEvent) -> YaResponse:
+    embed = create_embed(event)
+    if embed is not None:
+        await client.post(DISCORD_WEBHOOK, json={"embeds": [embed]})
+    return YaResponse(200, "")
+
+
+async def handle_ping(req: YaRequest) -> YaResponse:
+    return YaResponse(200, "")
+
+
+handler = when.dispatch(
+    when.header_is("x-github-event", "ping", handle_ping),
+    when.header_is("x-github-event", "issues", handle_issue_events),
+    init=init
+)
+```

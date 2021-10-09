@@ -7,6 +7,7 @@ from .core import (
     Context,
     RequestContext,
 )
+from . import when
 
 __all__ = (
     "function",
@@ -16,4 +17,6 @@ __all__ = (
 
     "Context",
     "RequestContext",
+
+    "when",
 )

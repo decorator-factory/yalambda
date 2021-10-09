@@ -67,7 +67,7 @@ python-versions = ">=3.5"
 name = "multidict"
 version = "5.2.0"
 description = "multidict implementation"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -94,7 +94,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8"
-content-hash = "7a507a0cba870700866454097c6c1093487361b390dae2f3800af0711e8b2373"
+content-hash = "8a1b2a701ef90628ea60a0f12d4b46f7f38cf65f9cef3186a04b8647e6b095c4"
 
 [metadata.files]
 aiohttp = [
