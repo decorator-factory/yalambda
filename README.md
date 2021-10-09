@@ -114,3 +114,15 @@ handler = dispatch({
 This function acts as a GitHub webhook and sends a pretty embed on Discord webhook when an issue is opened or closed. See the source code [on GitHub](https://github.com/decorator-factory/yalambda/tree/master/examples/github-to-discord-webhook).
 
 ![Screenshot from Discord showing two embeds](https://imgur.com/Kuoy0XE.png)
+
+
+# Development server
+
+You can install `aiohttp` and run your function locally.
+It's not the same as the real thing, but it should be enough for simple functions.
+
+```bash
+$ python -m yalambda your_module
+======== Running on http://0.0.0.0:55710 ========
+(Press CTRL+C to quit)
+```
