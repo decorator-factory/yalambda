@@ -5,7 +5,8 @@ import base64
 from dataclasses import dataclass, field
 from typing import (
     Any, Awaitable, Callable, Coroutine,
-    Dict, List, Protocol, TypeVar, TypedDict, Union, final
+    Dict, List, Mapping, Protocol, TypeVar,
+    TypedDict, Union, final
 )
 
 from .async_utils import before_first_call
@@ -158,3 +159,29 @@ def function(
             return resp.to_json()
         return handler
     return _decorator
+
+
+def dispatch(
+    handlers: Mapping[str, _YaHandler[Any]],
+    *,
+    init: _Init = _default_init,
+    df: dataclass_factory.Factory = _default_factory,
+) -> _RawHandler:
+    prepared_handlers = {
+        method.upper(): function(init, df)(h) for method, h in handlers.items()
+    }
+
+    error405 = "Allowed methods: " + ", ".join(handlers.keys())
+
+    @before_first_call(init)
+    async def handler(event: Event, context: Context) -> Dict[str, Any]:
+        req = YaRequest.build(event, context)
+        method = req.http_method.upper()
+        dispatched_handler = prepared_handlers.get(method)
+
+        if dispatched_handler is None:
+            return YaResponse(405, error405).to_json()
+
+        return await dispatched_handler(event, context)
+
+    return handler

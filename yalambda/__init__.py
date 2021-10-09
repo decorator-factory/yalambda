@@ -1,5 +1,6 @@
 from .core import (
     function,
+    dispatch,
     YaRequest,
     YaResponse,
 
@@ -9,6 +10,7 @@ from .core import (
 
 __all__ = (
     "function",
+    "dispatch",
     "YaRequest",
     "YaResponse",
 

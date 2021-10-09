@@ -79,6 +79,36 @@ async def handler(req: YaRequest) -> YaResponse:
 ```
 
 
+# Routing
+
+```py
+from dataclasses import dataclass
+from yalambda import dispatch, YaRequest, YaResponse
+
+
+@dataclass
+class Point:
+    x: float
+    y: float
+
+
+async def get_all_points(req: YaRequest) -> YaResponse:
+    points = [{"x": 3.0, "y": 4.0}, {"x": -1.0, "y": 3.27}]
+    return YaResponse(200, points)
+
+
+async def compute_distance(point: Point) -> YaResponse:
+    dist = (point.x**2 + point.y**2)**0.5
+    return YaResponse(200, {"distance_to_origin": dist})
+
+
+handler = dispatch({
+    "GET": get_all_points,
+    "POST": compute_distance,
+})
+```
+
+
 # Full example
 
 This function acts as a GitHub webhook and sends a pretty embed on Discord webhook when an issue is opened or closed. See the source code [on GitHub](https://github.com/decorator-factory/yalambda/tree/master/examples/github-to-discord-webhook).
