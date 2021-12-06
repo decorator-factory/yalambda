@@ -25,11 +25,11 @@ if len(sys.argv) != 2:
 module_name = sys.argv[1]
 
 
-# try:
-module = importlib.import_module(module_name)
-# except ImportError:
-#     sys.stderr.write("Cannot find module {}\n".format(module_name))
-#     sys.exit(1)
+try:
+    module = importlib.import_module(module_name)
+except ImportError:
+    sys.stderr.write("Cannot find module {}\n".format(module_name))
+    sys.exit(1)
 
 
 entrypoint: _RawHandler = module.handler  # type: ignore
